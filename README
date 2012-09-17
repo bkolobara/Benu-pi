@@ -1,0 +1,40 @@
+Benu
+====
+
+Operating System Increments for Education and Research
+(_Built for _education, _not (normal) _usage)
+
+Simple operating system for demonstration only (academic)
+Build through several steps, each bringing something new.
+System is "work in progress", improved/extended with (almost) every year.
+
+Name "Benu", besides acronym, represents an Egyptian bird...
+
+Full description (in Croatian) available in textbook at:
+	http://www.fer.unizg.hr/en/course/osfec
+	http://www.fer.unizg.hr/predmet/oszur
+
+This version (Benu) changed interface (among many other things) to POSIX.
+
+IMPORTANT!
+==========
+If running created system (built from Benu) in emulator other than QEMU, set
+standard input and output to vga_text mode -- in conf/config.ini set:
+K_INITIAL_STDOUT = vga_text_dev, K_STDOUT = VGA_TXT, U_STDIN = i8042,
+U_STDOUT = VGA_TXT, U_STDERR = VGA_TXT (uncomment this lines, comment other with
+*=COM1)
+(Buggy serial port implementation; works on QEMU but not with other emulators)
+
+
+
+Please report any bugs (and other problems) on site or via email.
+
+Contact address: leonardo@zemris.fer.hr
+
+
+DISCLAIMER
+==========
+Presented system has (probably) *many* bugs! Many concepts might not be
+adequate or good as might be (as are in some "real systems").
+*Please* do not use it for any other purpose other than education.
+Its not tested near enough to be used for anything more.
