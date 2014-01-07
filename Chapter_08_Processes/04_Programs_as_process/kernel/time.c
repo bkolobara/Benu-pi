@@ -543,6 +543,8 @@ int sys__timer_delete ( void *p )
 
 	retval = ktimer_delete ( ktimer );
 
+	kfree_kobject ( proc, kobj );
+
 	EXIT ( retval );
 }
 

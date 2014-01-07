@@ -7,15 +7,16 @@
 #include "kprint.h"
 #include <arch/interrupt.h>
 #include <arch/processor.h>
-#include <lib/string.h>
 #include <api/stdio.h>
 #include <api/prog_info.h>
 
 char system_info[] = 	OS_NAME ": " NAME_MAJOR ":" NAME_MINOR ", "
 			"Version: " VERSION " (" PLATFORM ")";
 
+static void run_all ( char *argv[] );
+
 /*!
- * First kernel function (after grub loads it to memory)
+ * First kernel function (after boot loader loads it to memory)
  */
 void k_startup ()
 {
@@ -33,8 +34,8 @@ void k_startup ()
 	arch_init_interrupts ();
 
 	/* detect memory faults (qemu do not detect segment violations!) */
-	arch_register_interrupt_handler ( INT_STF, k_memory_fault, NULL );
-	arch_register_interrupt_handler ( INT_GPF, k_memory_fault, NULL );
+	arch_register_interrupt_handler ( INT_MEM_FAULT, k_memory_fault, NULL );
+	arch_register_interrupt_handler ( INT_UNDEF_FAULT, k_memory_fault, NULL );
 
 	/* timer subsystem */
 	k_time_init ();
@@ -47,19 +48,39 @@ void k_startup ()
 
 	kprintf ( "%s\n", system_info );
 
-	if ( strcmp ( U_STDIN, "i8042" ) == 0 )
-		kprintf ("For input (keyboard) focus QEMU simulator window!\n");
-	else if ( strcmp ( U_STDIN, "COM1" ) == 0 )
-		kprintf ("For input (keyboard) focus shell\n");
-
 	/* enable interrupts */
 	enable_interrupts ();
 
 	stdio_init (); /* initialize standard input & output devices */
 
-	kprintf ( "Starting shell\n" );
-	shell ( NULL );
+	/* starting program routine */
+	PROG_START_FUNC ( NULL );
 
+#if ( TURN_OFF == 0 )
 	kprintf ( "\nSystem halted!\n" );
 	halt ();
+#else
+	/* power off (if supported, or just stop if not) */
+	kprintf ( "Powering off\n\n" );
+	power_off ();
+#endif
+}
+
+static void run_all ( char *argv[] )
+{
+	kprintf ( "\nStarting program: hello_world\n\n" );
+	hello_world (argv);
+
+	kprintf ( "\nStarting program: timer\n\n" );
+	timer (argv);
+#if 0
+	kprintf ( "\nStarting program: keyboard\n\n" );
+	keyboard (argv);
+
+	kprintf ( "\nStarting program: segm_fault\n\n" );
+	segm_fault (argv);
+#endif
+	kprintf ( "\nStarting program: arguments\n\n" );
+	char *args[] = { "first", "second", "third", NULL };
+	arguments (args);
 }

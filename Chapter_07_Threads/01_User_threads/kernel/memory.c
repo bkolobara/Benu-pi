@@ -23,6 +23,7 @@ void k_memory_init ()
 {
 	int i;
 
+	k_mpool = NULL;
 	mseg = arch_memory_init ();
 
 	/* find kernel heap */
@@ -56,33 +57,31 @@ void *kmalloc_kobject ( size_t obj_size )
 {
 	kobject_t *kobj;
 
-	kobj = kmalloc ( sizeof (kobject_t) );
+	kobj = kmalloc ( sizeof (kobject_t) + obj_size );
 	ASSERT ( kobj );
 
-	kobj->kobject = NULL;
 	kobj->flags = 0;
 	kobj->ptr = NULL;
 
 	if ( obj_size )
-	{
-		kobj->kobject = kmalloc ( obj_size );
-		ASSERT ( kobj->kobject );
-	}
+		kobj->kobject = kobj + 1;
+	else
+		kobj->kobject = NULL;
 
 	list_append ( &kobjects, kobj, &kobj->list );
 
 	return kobj;
 }
+
+/*! Free space reserved by kernel object */
 void *kfree_kobject ( kobject_t *kobj )
 {
+	ASSERT ( kobj );
 #ifndef DEBUG
 	list_remove ( &kobjects, 0, &kobj->list );
 #else /* DEBUG */
 	ASSERT ( list_find_and_remove ( &kobjects, &kobj->list ) );
 #endif
-
-	if ( kobj->kobject )
-		kfree ( kobj->kobject );
 
 	kfree ( kobj );
 
@@ -157,7 +156,7 @@ void k_memory_info ()
 
 	kprintf ( "Memory segments\n"
 		 "===============\n"
-		 "Type\tsize\tstart addres\tstring\n"
+		 "Type\tsize\t\tstart addres\tstring\n"
 	);
 
 	for ( i = 0; mseg[i].type != MS_END && i < 20; i++ )
@@ -167,10 +166,10 @@ void k_memory_info ()
 	}
 }
 
-/*! Handle memory fault interrupt */
+/*! Handle memory fault interrupt (and others undefined) */
 void k_memory_fault ()
 {
-	LOG ( ERROR, "General Protection Fault!!!");
+	LOG ( ERROR, "Undefined fault (exception)!!!");
 	halt ();
 }
 

@@ -82,29 +82,29 @@ int close ( int fd )
 }
 
 /*! Read from device */
-ssize_t read ( int fd, void *buf, size_t count )
+ssize_t read ( int fd, void *buffer, size_t count )
 {
 	if ( 	fd < 0 || fd >= MAX_USER_DESCRIPTORS ||
-		!std_desc[fd].id || !std_desc[fd].ptr || !buf || !count )
+		!std_desc[fd].id || !std_desc[fd].ptr || !buffer || !count )
 	{
 		set_errno ( EBADF );
 		return EXIT_FAILURE;
 	}
 
-	return syscall ( READ, &std_desc[fd], buf, count );
+	return syscall ( READ, &std_desc[fd], buffer, count );
 }
 
 /*! Write from device */
-ssize_t write ( int fd, void *buf, size_t count )
+ssize_t write ( int fd, void *buffer, size_t count )
 {
 	if ( 	fd < 0 || fd >= MAX_USER_DESCRIPTORS ||
-		!std_desc[fd].id || !std_desc[fd].ptr || !buf || !count )
+		!std_desc[fd].id || !std_desc[fd].ptr || !buffer || !count )
 	{
 		set_errno ( EBADF );
 		return EXIT_FAILURE;
 	}
 
-	return syscall ( WRITE, &std_desc[fd], buf, count );
+	return syscall ( WRITE, &std_desc[fd], buffer, count );
 }
 
 /*! Get input from "standard input" */
@@ -165,22 +165,4 @@ void warn ( char *format, ... )
 	size = vssprintf ( &cmd.cd.print.text[0], CONSOLE_MAXLEN, &format );
 
 	write ( _stderr, &cmd, size );
-}
-
-/*! Change standard input device */
-int change_stdin ( char *new_stdin )
-{
-	close ( _stdin );
-	_stdin = open ( new_stdin, O_RDONLY | CONSOLE_ASCII, 0 );
-
-	return EXIT_SUCCESS;
-}
-
-/*! Change standard output device */
-int change_stdout ( char *new_stdout )
-{
-	close ( _stdout );
-	_stdout = open ( new_stdout, O_WRONLY | CONSOLE_ASCII, 0 );
-
-	return EXIT_SUCCESS;
 }

@@ -1,5 +1,5 @@
 /*! interrupts.S - low level (arch) interrupt handling */
-#define ASM_FILE        1
+#define ASM_FILE	1
 
 /* defined in kernel/interrupts.c */
 .extern arch_interrupt_handler
@@ -7,7 +7,7 @@
 /* Interrupt handlers function addresses, required for filling IDT */
 .globl arch_interrupt_handlers
 
-/*.section .startup_code*/
+
 .section .text
 
 /* Interrupt handlers

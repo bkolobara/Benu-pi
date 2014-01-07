@@ -1,22 +1,20 @@
 /*! linker script for memory layout */
 
-/* OUTPUT_FORMAT("elf32-i386") */
-
 ENTRY(arch_startup)
 
 SECTIONS {
 	.code LOAD_ADDR :
 	{
-		kernel_code = .;
+		kernel_code_addr = .;
 
 		/* instructions */
-		*?/ARCH/boot/startup.asm.o ( .text* )
+		*?/boot/startup.asm.o ( .text* )
 
 		*( .text* )
 	}
 	.data :
 	{
-		kernel_data = .;
+		kernel_data_addr = .;
 
 		/* read only data (constants), initialized global variables */
 		* ( .rodata* .data* )
@@ -28,7 +26,7 @@ SECTIONS {
 		. = ALIGN (4096);
 	}
 
-	k_kernel_end = .;
+	kernel_end_addr = .;
 
 	/DISCARD/ : { *(.comment) } /* gcc info is discarded */
 	/DISCARD/ : { *(.eh_frame) } /* not used */

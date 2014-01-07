@@ -1,5 +1,5 @@
 /*! interrupts.S - low level (arch) interrupt handling */
-#define ASM_FILE        1
+#define ASM_FILE	1
 
 #include "descriptor.h"
 
@@ -17,7 +17,7 @@
 .extern arch_sse_supported, arch_sse_mmx_fpu
 #endif
 
-/*.section .startup_code*/
+
 .section .text
 
 

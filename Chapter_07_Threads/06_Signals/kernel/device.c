@@ -10,6 +10,8 @@
 
 static list_t devices;
 
+static void k_device_interrupt_handler ( unsigned int inum, void *device );
+
 /*! Initialize initial device as console for system boot messages */
 void kdevice_set_initial_stdout ()
 {
@@ -81,8 +83,8 @@ int k_device_init ( kdevice_t *kdev, int flags, void *params, void *callback )
 	if ( retval == EXIT_SUCCESS && kdev->dev.irq_handler )
 	{
 		(void) arch_register_interrupt_handler ( kdev->dev.irq_num,
-							 kdev->dev.irq_handler,
-							 &kdev->dev );
+							 k_device_interrupt_handler,
+							 kdev );
 		arch_irq_enable ( kdev->dev.irq_num );
 	}
 
@@ -188,6 +190,21 @@ void k_device_close ( kdevice_t *kdev )
 	/* FIXME: restore flags; use list kdev->descriptors? */
 }
 
+/* common device interrupt handler wrapper */
+static void k_device_interrupt_handler ( unsigned int inum, void *device )
+{
+	kdevice_t *kdev = device;
+	int status = ERESERVED;
+
+	ASSERT ( inum && device && kdev->dev.irq_num == inum );
+	/* TODO: check if kdev is in "devices" list */
+
+	if ( kdev->dev.irq_handler )
+		status = kdev->dev.irq_handler ( inum, &kdev->dev );
+
+	/* handle return status if required */
+}
+
 /* /dev/null emulation */
 static int do_nothing ()
 {
@@ -258,7 +275,6 @@ int sys__close ( descriptor_t *desc )
 	kdev = kobj->kobject;
 	ASSERT_ERRNO_AND_EXIT ( kdev && kdev->id == desc->id, EINVAL );
 
-	kobj->kobject = NULL;
 	kfree_kobject ( kobj );
 
 	/* remove descriptor from device list */
@@ -269,18 +285,18 @@ int sys__close ( descriptor_t *desc )
 	SYS_EXIT ( EXIT_SUCCESS, EXIT_SUCCESS );
 }
 
-static int read_write ( descriptor_t *desc, void *buf, size_t count, int op );
+static int read_write ( descriptor_t *desc, void *buffer, size_t size, int op );
 
-int sys__read ( descriptor_t *desc, void *buf, size_t count )
+int sys__read ( descriptor_t *desc, void *buffer, size_t size )
 {
-	return read_write ( desc, buf, count, TRUE );
+	return read_write ( desc, buffer, size, TRUE );
 }
-int sys__write ( descriptor_t *desc, void *buf, size_t count )
+int sys__write ( descriptor_t *desc, void *buffer, size_t size )
 {
-	return read_write ( desc, buf, count, FALSE );
+	return read_write ( desc, buffer, size, FALSE );
 }
 
-static int read_write ( descriptor_t *desc, void *buf, size_t count, int op )
+static int read_write ( descriptor_t *desc, void *buffer, size_t size, int op )
 {
 	kdevice_t *kdev;
 	kobject_t *kobj;
@@ -288,7 +304,7 @@ static int read_write ( descriptor_t *desc, void *buf, size_t count, int op )
 
 	SYS_ENTRY();
 
-	ASSERT_ERRNO_AND_EXIT ( desc && buf && count > 0, EINVAL );
+	ASSERT_ERRNO_AND_EXIT ( desc && buffer && size > 0, EINVAL );
 
 	kobj = desc->ptr;
 	ASSERT_ERRNO_AND_EXIT ( kobj, EINVAL );
@@ -300,9 +316,9 @@ static int read_write ( descriptor_t *desc, void *buf, size_t count, int op )
 	/* TODO check permission for requested operation from opening flags */
 
 	if ( op )
-		retval = k_device_recv ( buf, count, kobj->flags, kdev );
+		retval = k_device_recv ( buffer, size, kobj->flags, kdev );
 	else
-		retval = k_device_send ( buf, count, kobj->flags, kdev );
+		retval = k_device_send ( buffer, size, kobj->flags, kdev );
 
 	if ( retval >= 0 )
 		SYS_EXIT ( EXIT_SUCCESS, retval );

@@ -40,6 +40,7 @@ static int (*k_sysfunc[SYSFUNCS]) ( void *params ) =
 	sys__close,
 	sys__read,
 	sys__write,
+	sys__power_off,
 
 	sys__pthread_create,
 	sys__pthread_exit,
@@ -72,8 +73,6 @@ static int (*k_sysfunc[SYSFUNCS]) ( void *params ) =
 	sys__pthread_sigmask,
 	sys__sigqueue,
 	sys__sigwaitinfo,
-
-	sys__suspend,
 
 	sys__posix_spawn
 };
@@ -108,6 +107,7 @@ int sys__suspend ( void *p )
 {
 	enable_interrupts ();
 	suspend ();
+	disable_interrupts ();
 
 	return 0;
 }

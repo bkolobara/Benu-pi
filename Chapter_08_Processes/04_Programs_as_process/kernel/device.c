@@ -6,9 +6,12 @@
 #include <kernel/errno.h> /* shares errno with arch layer */
 #include "memory.h"
 #include <arch/interrupt.h>
+#include <arch/processor.h>
 #include <lib/string.h>
 
 static list_t devices;
+
+static void k_device_interrupt_handler ( unsigned int inum, void *device );
 
 /*! Initialize initial device as console for system boot messages */
 void kdevice_set_initial_stdout ()
@@ -81,8 +84,8 @@ int k_device_init ( kdevice_t *kdev, int flags, void *params, void *callback )
 	if ( retval == EXIT_SUCCESS && kdev->dev.irq_handler )
 	{
 		(void) arch_register_interrupt_handler ( kdev->dev.irq_num,
-							 kdev->dev.irq_handler,
-							 &kdev->dev );
+							 k_device_interrupt_handler,
+							 kdev );
 		arch_irq_enable ( kdev->dev.irq_num );
 	}
 
@@ -188,6 +191,21 @@ void k_device_close ( kdevice_t *kdev )
 	/* FIXME: restore flags; use list kdev->descriptors? */
 }
 
+/* common device interrupt handler wrapper */
+static void k_device_interrupt_handler ( unsigned int inum, void *device )
+{
+	kdevice_t *kdev = device;
+	int status = ERESERVED;
+
+	ASSERT ( inum && device && kdev->dev.irq_num == inum );
+	/* TODO: check if kdev is in "devices" list */
+
+	if ( kdev->dev.irq_handler )
+		status = kdev->dev.irq_handler ( inum, &kdev->dev );
+
+	/* handle return status if required */
+}
+
 /* /dev/null emulation */
 static int do_nothing ()
 {
@@ -282,7 +300,6 @@ int sys__close ( void *p )
 	kdev = kobj->kobject;
 	ASSERT_ERRNO_AND_EXIT ( kdev && kdev->id == desc->id, EINVAL );
 
-	kobj->kobject = NULL;
 	kfree_kobject ( proc, kobj );
 
 	/* remove descriptor from device list */
@@ -307,8 +324,8 @@ int sys__write ( void *p )
 static int read_write ( void *p, int op )
 {
 	descriptor_t *desc;
-	void *buf;
-	size_t count;
+	void *buffer;
+	size_t size;
 
 	kdevice_t *kdev;
 	kobject_t *kobj;
@@ -316,18 +333,18 @@ static int read_write ( void *p, int op )
 	kprocess_t *proc;
 
 	desc =  *( (descriptor_t **) p );	p += sizeof (descriptor_t *);
-	buf =   *( (char **) p );		p += sizeof (char *);
-	count = *( (size_t *) p );
+	buffer =   *( (char **) p );		p += sizeof (char *);
+	size = *( (size_t *) p );
 
 	proc = kthread_get_process (NULL);
 
 	ASSERT_ERRNO_AND_EXIT ( desc, EINVAL );
 	desc = U2K_GET_ADR ( desc, proc );
 	ASSERT_ERRNO_AND_EXIT ( desc, EINVAL );
-	ASSERT_ERRNO_AND_EXIT ( buf, EINVAL );
-	buf = U2K_GET_ADR ( buf, proc );
-	ASSERT_ERRNO_AND_EXIT ( buf, EINVAL );
-	ASSERT_ERRNO_AND_EXIT ( count > 0, EINVAL );
+	ASSERT_ERRNO_AND_EXIT ( buffer, EINVAL );
+	buffer = U2K_GET_ADR ( buffer, proc );
+	ASSERT_ERRNO_AND_EXIT ( buffer, EINVAL );
+	ASSERT_ERRNO_AND_EXIT ( size > 0, EINVAL );
 
 	kobj = desc->ptr;
 	ASSERT_ERRNO_AND_EXIT ( kobj, EINVAL );
@@ -339,12 +356,26 @@ static int read_write ( void *p, int op )
 	/* TODO check permission for requested operation from opening flags */
 
 	if ( op )
-		retval = k_device_recv ( buf, count, kobj->flags, kdev );
+		retval = k_device_recv ( buffer, size, kobj->flags, kdev );
 	else
-		retval = k_device_send ( buf, count, kobj->flags, kdev );
+		retval = k_device_send ( buffer, size, kobj->flags, kdev );
 
 	if ( retval >= 0 )
 		EXIT2 ( EXIT_SUCCESS, retval );
 	else
 		EXIT2 ( EIO, EXIT_FAILURE );
+}
+
+
+/*!
+ * System power off
+ */
+int sys__power_off ( void *p )
+{
+	/* power off is supported */
+	arch_power_off();
+
+	kprintf ( "\nPower off with ACPI failed!\n" );
+
+	EXIT ( ENOTSUP );
 }

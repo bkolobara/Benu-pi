@@ -6,13 +6,13 @@
 #include <api/prog_info.h>
 
 /*! kernel stack */
-uint8 k_stack [ STACK_SIZE ];
+uint8 system_stack [ STACK_SIZE ];
 
 char system_info[] = 	OS_NAME ": " NAME_MAJOR ":" NAME_MINOR ", "
 			"Version: " VERSION " (" PLATFORM ")";
 
 /*!
- * First kernel function (after grub loads it to memory)
+ * First kernel function (after boot loader loads it to memory)
  */
 void k_startup ()
 {
@@ -24,6 +24,12 @@ void k_startup ()
 	/* start desired program(s) */
 	hello_world ();
 
+#if ( TURN_OFF == 0 )
 	kconsole_print_word ( "System halted!" );
 	halt ();
+#else
+	/* power off (if supported, or just stop if not) */
+	kconsole_print_word ( "Powering off" );
+	power_off ();
+#endif
 }

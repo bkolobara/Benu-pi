@@ -416,6 +416,9 @@ int kthread_exit ( kthread_t *kthread, void *exit_status, int force )
 	if ( kthread->proc->thread_count == 0 && kthread->proc->pi )
 	{
 		/* last (non-kernel) thread - remove process */
+
+		kfree_process_kobjects ( kthread->proc );
+
 		kthread->proc->prog->started = FALSE;
 #ifdef DEBUG
 		ASSERT ( kthread->proc ==
@@ -426,23 +429,23 @@ int kthread_exit ( kthread_t *kthread, void *exit_status, int force )
 		kfree ( kthread->proc );
 	}
 
-	if ( !kthread->ref_cnt )
+
+	q = &kthread->join_queue;
+
+	while ( (released = kthreadq_remove ( q, NULL )) != NULL )
 	{
+		/* save exit status to all waiting threads */
+		p = kthread_get_private_param ( released );
+		if ( p )
+			*p = exit_status;
+
+		kthread_move_to_ready ( released, LAST );
+		kthread->ref_cnt--;
+	}
+
+	if ( !kthread->ref_cnt )
 		kthread_remove_descriptor ( kthread );
-	}
-	else {
-		q = &kthread->join_queue;
 
-		while ( (released = kthreadq_remove ( q, NULL )) != NULL )
-		{
-			/* save exit status to all waiting threads */
-			p = kthread_get_private_param ( released );
-			if ( p )
-				*p = exit_status;
-
-			kthread_move_to_ready ( released, LAST );
-		}
-	}
 	if ( kthread == active_thread )
 	{
 		active_thread = NULL;
@@ -489,7 +492,7 @@ void kthread_collect_status ( kthread_t *waited, void **retval )
 	if ( retval )
 		*retval = waited->state.exit_status;
 
-	waited->ref_cnt--;
+	//waited->ref_cnt--;
 	if ( !waited->ref_cnt )
 		kthread_remove_descriptor ( waited );
 }
@@ -864,7 +867,7 @@ int kthread_info ()
 static void idle_thread ( void *param )
 {
 	while (1)
-		syscall ( SUSPEND, NULL );
+		user_mode_suspend();
 }
 
 /*! Change thread scheduling parameters ------------------------------------- */

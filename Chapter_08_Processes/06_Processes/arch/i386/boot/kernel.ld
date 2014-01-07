@@ -1,36 +1,34 @@
 /*! linker script for memory layout of kernel */
 
-/* OUTPUT_FORMAT("elf32-i386") */
-
 ENTRY(arch_startup)
 
 SECTIONS {
 	.kernel LOAD_ADDR :
 	{
-		kernel_code = .;
+		kernel_code_addr = .;
 
-		*?/ARCH/boot/startup.asm.o ( .text* )
+		*?/boot/startup.asm.o ( .text* )
 		*( .text* )
 
-		/* *( EXCLUDE_FILE ( *?/ARCH/syscall.asm.o *?/programs/?* )
+		/* *( EXCLUDE_FILE ( *?/arch/i386/syscall.asm.o *?/programs/?* )
 			.text* )*/
 
-		kernel_data = .;
+		kernel_data_addr = .;
 
 		*( .rodata* .data* )
-		/* *( EXCLUDE_FILE ( *?/ARCH/syscall.asm.o *?/programs/?* )
+		/* *( EXCLUDE_FILE ( *?/arch/i386/syscall.asm.o *?/programs/?* )
 			.rodata* .data* ) */
 	}
 	.kernel_bss :
 	{
 		*( .bss* COMMON* )
-		/* *( EXCLUDE_FILE ( *?/ARCH/syscall.asm.o *?/programs/?* )
+		/* *( EXCLUDE_FILE ( *?/arch/i386/syscall.asm.o *?/programs/?* )
 			.bss* COMMON* ) */
 
 		. = ALIGN (4096);
 	}
 
-	k_kernel_end = .;
+	kernel_end_addr = .;
 
 	/DISCARD/ : { *(.comment) } /* gcc info is discarded */
 	/DISCARD/ : { *(.eh_frame) } /* not used */
