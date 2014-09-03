@@ -1,7 +1,7 @@
 /*! Basic types, machine dependent */
 #pragma once
 
-#include <ARCH/types.h>
+#include <_ARCH/types.h>
 
 typedef	arch_int8 		int8;
 typedef	arch_uint8	 	uint8;

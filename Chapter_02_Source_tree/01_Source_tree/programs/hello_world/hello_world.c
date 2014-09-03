@@ -1,11 +1,9 @@
-/*! Hello world program */
+/* Make the LED light go on and off */
 
-#include <stdio.h>
-#include <api/prog_info.h>
+#include <arch/gpu.h>
 
-int hello_world ()
+
+int hello_world()
 {
-	console_print_word ( "Hello World!" );
-
 	return 0;
 }

@@ -4,7 +4,7 @@
 # valid command line defines: debug=yes, optimize=yes
 
 #default target
-ARCH ?= i386
+ARCH ?= armpi
 
 CONFIG_INI = arch/$(ARCH)/config.ini
 THIS_MAKEFILE = Makefile
@@ -32,14 +32,17 @@ CMACROS += STACK_SIZE=$(STACK_SIZE)					\
 
 #------------------------------------------------------------------------------
 
-all: $(BINFILE)
+all: kernel.img
+
+kernel.img: $(BINFILE)
+	/opt/arm-gcc/bin/arm-none-eabi-objcopy $(BINFILE) -O binary kernel.img
 
 #create ARCH symbolic link for selected platform (placed in arch/ directory)
 #(used only for #include <ARCH/*> purposes)
 prepare_src:
-	@-if [ ! -d $(BUILDDIR)/ARCH ]; then				\
+	@-if [ ! -d $(BUILDDIR)/_ARCH ]; then				\
 		mkdir -p $(BUILDDIR);					\
-		ln -s ../arch/$(ARCH) $(BUILDDIR)/ARCH ;		\
+		ln -s ../arch/$(ARCH) $(BUILDDIR)/_ARCH ;		\
 	fi;
 
 
