@@ -1,7 +1,7 @@
 build/
 *.o
-*.S
 *.elf
+*.img
+.DS_Store
 
 !.gitignore
-
